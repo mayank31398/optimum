@@ -215,6 +215,7 @@ class NormalizedConfigManager:
         "regnet": NormalizedVisionConfig,
         "resnet": NormalizedVisionConfig,
         "roberta": NormalizedTextConfig,
+        "santacoder": GPT2LikeNormalizedTextConfig,
         "speech_to_text": SpeechToTextLikeNormalizedTextConfig,
         "splinter": NormalizedTextConfig,
         "t5": T5LikeNormalizedTextConfig,

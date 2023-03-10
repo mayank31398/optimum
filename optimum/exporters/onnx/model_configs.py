@@ -14,7 +14,7 @@
 # limitations under the License.
 """Model specific ONNX configurations."""
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 from packaging import version
 
@@ -194,6 +194,59 @@ class GPTNeoOnnxConfig(TextDecoderOnnxConfig):
 class GPTNeoXOnnxConfig(TextDecoderOnnxConfig):
     DEFAULT_ONNX_OPSET = 13
     NORMALIZED_CONFIG_CLASS = NormalizedTextConfig
+
+
+class SantaCoderDummyPastKeyValuesGenerator(DummyPastKeyValuesGenerator):
+    def generate(self, input_name: str, framework: str = "pt"):
+        past_key_shape = (
+            self.batch_size,
+            self.hidden_size // self.num_attention_heads,
+            self.sequence_length,
+        )
+        past_value_shape = (
+            self.batch_size,
+            self.sequence_length,
+            self.hidden_size // self.num_attention_heads,
+        )
+        return [
+            (
+                self.random_float_tensor(past_key_shape, framework=framework),
+                self.random_float_tensor(past_value_shape, framework=framework),
+            )
+            for _ in range(self.num_layers)
+        ]
+
+
+class SantaCoderOnnxConfig(GPT2OnnxConfig):
+    DUMMY_INPUT_GENERATOR_CLASSES = (
+        SantaCoderDummyPastKeyValuesGenerator,
+    ) + TextDecoderOnnxConfig.DUMMY_INPUT_GENERATOR_CLASSES[:-1]
+    DUMMY_PKV_GENERATOR_CLASS = SantaCoderDummyPastKeyValuesGenerator
+
+    def add_past_key_values(self, inputs_or_outputs: Dict[str, Dict[int, str]], direction: str):
+        """
+        Fills `input_or_outputs` mapping with past_key_values dynamic axes considering the direction.
+
+        Args:
+            inputs_or_outputs (`Dict[str, Dict[int, str]]`):
+                The mapping to fill.
+            direction (`str`):
+                either "inputs" or "outputs", it specifies whether `input_or_outputs` is the input mapping or the
+                output mapping, this is important for axes naming.
+        """
+        if direction not in ["inputs", "outputs"]:
+            raise ValueError(f'direction must either be "inputs" or "outputs", but {direction} was given')
+
+        if direction == "inputs":
+            decoder_sequence_name = "past_sequence_length"
+            name = "past_key_values"
+        else:
+            decoder_sequence_name = "past_sequence_length + 1"
+            name = "present"
+
+        for i in range(self._normalized_config.num_layers):
+            inputs_or_outputs[f"{name}.{i}.key"] = {0: "batch_size", 2: decoder_sequence_name}
+            inputs_or_outputs[f"{name}.{i}.value"] = {0: "batch_size", 1: decoder_sequence_name}
 
 
 class BloomDummyPastKeyValuesGenerator(DummyPastKeyValuesGenerator):

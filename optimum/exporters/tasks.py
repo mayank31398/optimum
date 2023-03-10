@@ -621,6 +621,13 @@ class TasksManager:
             onnx="RoFormerOnnxConfig",
             tflite="RoFormerTFLiteConfig",
         ),
+        "santacoder": supported_tasks_mapping(
+            "default",
+            "default-with-past",
+            "causal-lm",
+            "causal-lm-with-past",
+            onnx="SantaCoderOnnxConfig",
+        ),
         "segformer": supported_tasks_mapping(
             "default",
             "image-classification",
