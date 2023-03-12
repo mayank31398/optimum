@@ -218,6 +218,7 @@ class SantaCoderDummyPastKeyValuesGenerator(DummyPastKeyValuesGenerator):
 
 
 class SantaCoderOnnxConfig(GPT2OnnxConfig):
+    DEFAULT_ONNX_OPSET = 17
     DUMMY_INPUT_GENERATOR_CLASSES = (
         SantaCoderDummyPastKeyValuesGenerator,
     ) + TextDecoderOnnxConfig.DUMMY_INPUT_GENERATOR_CLASSES[:-1]
