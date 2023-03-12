@@ -10,6 +10,12 @@ def get_args() -> Namespace:
     parser.add_argument("--save_path", required=True, help="save directory")
     parser.add_argument("--merge_graphs", action="store_true", help="merge the 2 graphs")
     parser.add_argument("--enable_fusion", action="store_true", help="manual fusion")
+    parser.add_argument(
+        "--provider",
+        default="CPUExecutionProvider",
+        choices=["TensorrtExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"],
+        help="execution engine",
+    )
     args = parser.parse_args()
     return args
 
@@ -21,7 +27,7 @@ def main() -> None:
     tokenizer.save_pretrained(args.save_path)
 
     model = ORTModelForCausalLM.from_pretrained(
-        args.model_name, export=True, trust_remote_code=True, use_merged=args.merge_graphs
+        args.model_name, export=True, trust_remote_code=True, provider=args.provider, use_merged=args.merge_graphs
     )
 
     if args.enable_fusion:
