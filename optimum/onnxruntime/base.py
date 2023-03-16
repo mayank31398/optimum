@@ -235,6 +235,9 @@ class ORTDecoder(ORTModelPart):
         Returns:
             `Dict[str, List[int]]`: The dictionary mapping each past key value output name to its corresponding shape.
         """
+
+        is_multi_query = self.normalized_config.config.attention_head_type == "multiquery"
+
         batch_size = input_ids.size(0)
         num_attention_heads = self.normalized_config.num_attention_heads
         embed_size_per_head = self.normalized_config.hidden_size // num_attention_heads
@@ -245,8 +248,12 @@ class ORTDecoder(ORTModelPart):
             # of a merged decoder is used
             sequence_length += past_key_values[0].size(2)
 
-        half_shape = [batch_size, num_attention_heads]
-        if len(self.expected_key_symbolic_shape) == 3:
+        if is_multi_query:
+            half_shape = [batch_size]
+        else:
+            half_shape = [batch_size, num_attention_heads]
+
+        if len(self.expected_key_symbolic_shape) == 3 and not is_multi_query:
             half_shape[0] = batch_size * num_attention_heads
             half_shape.pop(1)
 
@@ -280,6 +287,7 @@ class ORTDecoder(ORTModelPart):
             past_key_values = [past_key_value for pkv_per_layer in past_key_values for past_key_value in pkv_per_layer]
 
         # no-ops if merged decoder is not used
+        # note this is not implemented for santacoder yet
         use_cache_branch, past_key_values = self.prepare_inputs_for_merged(input_ids, past_key_values)
 
         if self.device.type == "cuda" and self.parent_model.use_io_binding:
